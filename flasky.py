@@ -2,12 +2,10 @@ from flask import Flask,render_template
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from datetime import datetime
-from flask_script import Manager
 
 app = Flask(__name__)
 bootstrap = Bootstrap(app)
 moment = Moment(app)
-manager = Manager(app)
 
 @app.route('/')
 def index():
@@ -28,4 +26,4 @@ def internal_server_error(e):
 
 if __name__ == '__main__':
     #用manager接管app启动后，不要传任何参数
-    manager.run()
+    app.run(debug=True)
