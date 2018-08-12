@@ -11,6 +11,7 @@
 {%  block scripts %}
 {{ super() }}
 {{ moment.include_moment() }}
+    {{ moment.locale('zh-CN') }}
 {% endblock %}
 
 {% block navbar %}
@@ -37,6 +38,13 @@
 
 {%  block content %}
 <div class="container">
+    {% for message in get_flashed_messages() %}
+    <div class="alert alert-warning">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+
+    </div>
+    {% endfor %}
     {% block page_content %}{%  endblock %}
 </div>
 {% endblock %}
