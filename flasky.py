@@ -6,6 +6,7 @@ from forms import NameForm
 from flask_sqlalchemy import SQLAlchemy
 import os
 from flask_migrate import Migrate
+from sqlalchemy import MetaData
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hello flasky'
@@ -14,13 +15,21 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////'+ os.path.join(base_dir,'da
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 bootstrap = Bootstrap(app)
 moment = Moment(app)
-db = SQLAlchemy(app)
-migrate = Migrate(app,db)
+
+naming_convention = {
+    "ix": 'ix_%(column_0_label)s',
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ck": "ck_%(table_name)s_%(column_0_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s"
+}
+db = SQLAlchemy(app=app,metadata=MetaData(naming_convention=naming_convention))
+migrate = Migrate(app,db,render_as_batch=True)
 
 class Role(db.Model):
     __tablename__ = 'roles'
     id = db.Column(db.Integer,primary_key=True)
-    name = db.Column(db.String(64))
+    name = db.Column(db.String(64),unique=True)
     users = db.relationship('User',backref='role',lazy='dynamic')
 
     def __repr__(self):
