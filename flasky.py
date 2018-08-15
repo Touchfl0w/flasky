@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, session, redirect, url_for, flash
+from flask import Flask, render_template, session, redirect, url_for, flash
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from datetime import datetime
@@ -20,7 +20,6 @@ app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_SSL'] = True
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-print(os.environ.get('MAIL_PASSWORD'))
 app.config['MAIL_SUBJECT_PREFIX'] = 'FLASKY'
 app.config['MAIL_SENDER'] = '就爱深蓝色 <1754643407@qq.com>'
 app.config['MAIL_ADMIN'] = os.environ.get('MAIL_ADMIN')
@@ -35,14 +34,14 @@ naming_convention = {
 mail = Mail(app)
 bootstrap = Bootstrap(app)
 moment = Moment(app)
-db = SQLAlchemy(app=app,metadata=MetaData(naming_convention=naming_convention))
-migrate = Migrate(app,db,render_as_batch=True)
+db = SQLAlchemy(app=app, metadata=MetaData(naming_convention=naming_convention))
+migrate = Migrate(app, db, render_as_batch=True)
 
 def send_mail(to,subject,template,**kargs):
     rel = True
-    msg = Message(app.config['MAIL_SUBJECT_PREFIX']+subject,sender=app.config['MAIL_SENDER'],recipients=[to])
-    msg.body = render_template(template + '.txt',**kargs)
-    msg.html = render_template(template + '.html',**kargs)
+    msg = Message(app.config['MAIL_SUBJECT_PREFIX'] + ' ' + subject, sender=app.config['MAIL_SENDER'], recipients=[to])
+    msg.body = render_template(template + '.txt', **kargs)
+    msg.html = render_template(template + '.html', **kargs)
     try:
         mail.send(msg)
     except:
@@ -53,9 +52,9 @@ def send_mail(to,subject,template,**kargs):
 
 class Role(db.Model):
     __tablename__ = 'roles'
-    id = db.Column(db.Integer,primary_key=True)
-    name = db.Column(db.String(64),unique=True)
-    users = db.relationship('User',backref='role',lazy='dynamic')
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True)
+    users = db.relationship('User', backref='role', lazy='dynamic')
 
     def __repr__(self):
         return '<Role {}>'.format(self.name)
@@ -63,9 +62,9 @@ class Role(db.Model):
 
 class User(db.Model):
     __tablename__ = 'users'
-    id = db.Column(db.Integer,primary_key=True)
-    username = db.Column(db.String,unique=True)
-    role_id = db.Column(db.Integer,db.ForeignKey('roles.id'))
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String, unique=True)
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
 
     def __repr__(self):
         return '<User {}>'.format(self.username)
@@ -73,7 +72,7 @@ class User(db.Model):
 
 @app.shell_context_processor
 def make_shell_context():
-    return dict(db=db,User=User,Role=Role)
+    return dict(db=db, User=User, Role=Role)
 
 
 @app.route('/', methods=['get', 'post'])
@@ -86,16 +85,17 @@ def index():
             db.session.add(new_user)
             db.session.commit()
             session['known'] = False
-            text = app.config['MAIL_ADMIN']
-            # if text:
-            send_mail(app.config['MAIL_ADMIN'], 'new user registried', 'mail/registry', user=user)
+            result = send_mail(app.config['MAIL_ADMIN'], 'new user registered', 'mail/registry', user=new_user)
+            if result:
+                flash('the mail has been sent to administer!')
+            else:
+                flash('occur error when sending the mail')
         else:
             session['known'] = True
         session['name'] = form.name.data
         return redirect(url_for('index'))
-
     return render_template("index.html", current_time=datetime.utcnow(), form=form, name=session.get(
-        'name'),known=session.get('known'))
+        'name'), known=session.get('known'))
 
 
 @app.route('/<name>')
