@@ -19,22 +19,23 @@ class Config():
     def init_app(app):
         pass
 
-class Development_Config(Config):
+
+class DevelopmentConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEVELOPMENT_DATABASE_URI') or 'sqlite:////'+ os.path.join(
         base_dir,'data.sqlite')
 
 
-class Testing_Config(Config):
+class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('TESTING_DATABASE_URI') or 'sqlite://'
 
 
-class Product_Config(Config):
+class ProductConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('PRODUCT_DATABASE_URI') or 'sqlite:////' + os.path.join(
         base_dir, 'data_pro.sqlite')
 
 config = {
-    'development': Development_Config,
-    'testing': Testing_Config,
-    'product': Product_Config,
-    'default': Development_Config
+    'development': DevelopmentConfig,
+    'testing': TestingConfig,
+    'product': ProductConfig,
+    'default': DevelopmentConfig
 }
