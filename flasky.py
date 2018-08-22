@@ -10,7 +10,12 @@ migrate = Migrate(app, db, render_as_batch=True)
 def make_shell_context():
     return dict(db=db, User=User, Role=Role)
 
-
+@app.cli.command()
+def test():
+    """run unit tests"""
+    import unittest
+    tests = unittest.TestLoader().discover('tests') #测试目录名称
+    unittest.TextTestRunner(verbosity=2).run(tests)
 if __name__ == '__main__':
     #用manager接管app启动后，不要传任何参数
     app.run(debug=True)

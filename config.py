@@ -21,15 +21,18 @@ class Config():
 
 
 class DevelopmentConfig(Config):
+    DEVELOPMENT = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEVELOPMENT_DATABASE_URI') or 'sqlite:////'+ os.path.join(
         base_dir,'data.sqlite')
 
 
 class TestingConfig(Config):
+    TESTING = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('TESTING_DATABASE_URI') or 'sqlite://'
 
 
 class ProductConfig(Config):
+    PRODUCTION = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('PRODUCT_DATABASE_URI') or 'sqlite:////' + os.path.join(
         base_dir, 'data_pro.sqlite')
 
