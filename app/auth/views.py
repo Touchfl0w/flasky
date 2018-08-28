@@ -1,12 +1,13 @@
 
-from flask import request, redirect, url_for, flash, render_template
+from flask import request, redirect, url_for, flash, render_template, current_app
 
-from app import db
+from app import db, mail
 from .forms import LoginForm, RegistForm
 from . import auth
 from ..models import User
-from flask_login import login_user, logout_user, current_user
+from flask_login import login_user, logout_user, current_user, login_required
 from flask import session
+
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
@@ -26,12 +27,14 @@ def login():
             flash('Invalid Username or Password!')
     return render_template('auth/login.html', form=form)
 
+
 @auth.route('/logout')
 def logout():
     #默认退出当前账号
     logout_user()
     flash('您已退出登录！')
     return redirect(url_for('main.index'))
+
 
 @auth.route('/register', methods=['GET','POST'])
 def register():
@@ -40,6 +43,22 @@ def register():
         user = User(username=form.username.data, password=form.password.data, email=form.email.data)
         db.session.add(user)
         db.session.commit()
-        flash('用户已注册')
+        mail.send_mail(current_app.config['MAIL_ADMIN'], '用户注册', 'mail/registry', user=user)
+        token = user.generate_confirmation_token()
+        mail.send_mail(user.email, '确认账户', 'auth/mail/confirm_account', user=user, token=token)
+        flash('请前往邮箱确认账户')
         return redirect(url_for('main.index'))
     return render_template('auth/registry.html', form=form)
+
+@auth.route('/confirm/<token>')
+@login_required
+def confirm(token):
+    if current_user.confirmed:
+        return redirect(url_for('main.index'))
+    if current_user.verify_token(token):
+        db.session.commit()
+        flash('账户已经成功确认')
+    else:
+        flash('账户确认失败，确认链接可能已失效')
+    return redirect(url_for('main.index'))
+

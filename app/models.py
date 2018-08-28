@@ -1,5 +1,6 @@
+from flask import current_app
 from werkzeug.security import generate_password_hash, check_password_hash
-
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from . import db
 from flask_login import UserMixin
 from . import login_manager
@@ -23,6 +24,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(64), unique=True, index=True)
     password_hash = db.Column(db.String(128))
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+    confirmed = db.Column(db.Boolean, default=False)
 
     @property
     def password(self):
@@ -34,6 +36,25 @@ class User(UserMixin, db.Model):
 
     def verify_password(self,password):
         return check_password_hash(self.password_hash, password)
+
+    def generate_confirmation_token(self, expiration=3600):
+        s = Serializer(current_app.config['SECRET_KEY'], expires_in=expiration)
+        token = s.dumps({'confirm': self.id})
+        return token
+
+    def verify_token(self, token):
+        #这应该是个反序列化器，不用设过期时间，没有盐
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except:
+            return False
+        else:
+            if data['confirm'] != self.id:
+                return False
+        self.confirmed = True
+        db.session.add(self)
+        return True
 
     def __repr__(self):
         return '<User {}>'.format(self.username)

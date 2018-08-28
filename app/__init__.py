@@ -22,6 +22,7 @@ db = SQLAlchemy(metadata=MetaData(naming_convention=naming_convention))
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
 
+
 def create_app(config_name):
     app = Flask(__name__)
     #常规初始化
