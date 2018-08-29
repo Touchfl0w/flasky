@@ -1,0 +1,5 @@
+<h2>{{ user.username}}:</h2>
+
+<p>欢迎来到Flasky!</p>
+
+<p>如想确认账户，点击以下链接：{{ url_for('auth.confirm',token=token,_external=True) }}</p>
