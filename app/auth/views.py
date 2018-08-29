@@ -50,6 +50,7 @@ def register():
         return redirect(url_for('main.index'))
     return render_template('auth/registry.html', form=form)
 
+
 @auth.route('/confirm/<token>')
 @login_required
 def confirm(token):
@@ -62,3 +63,26 @@ def confirm(token):
         flash('账户确认失败，确认链接可能已失效')
     return redirect(url_for('main.index'))
 
+
+@auth.before_app_request
+def before_request():
+    if (current_user.is_authenticated) and not (current_user.confirmed) and (
+                request.blueprint != 'auth') and (request.endpoint != 'static'):
+        return redirect(url_for('auth.unconfirmed'))
+
+
+@auth.route('/unconfirmed')
+def unconfirmed():
+    if current_user.is_anonymous or current_user.confirmed:
+        return redirect(url_for('main.index'))
+    return render_template('auth/unconfirmed.html')
+
+
+@auth.route('/resend_confirmation')
+def resend_confirmation():
+    email = current_user.email
+    token = current_user.generate_confirmation_token()
+    mail.send_mail(email, '确认账户', 'auth/mail/confirm_account', user=current_user,
+                   token=token)
+    flash('账户确认邮件已经重新发送')
+    return redirect(url_for('main.index'))
