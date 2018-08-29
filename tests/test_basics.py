@@ -1,4 +1,7 @@
 from unittest import TestCase
+
+from flask import current_app
+
 from app import create_app
 from app import db
 
