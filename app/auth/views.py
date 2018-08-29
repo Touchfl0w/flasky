@@ -2,7 +2,7 @@
 from flask import request, redirect, url_for, flash, render_template, current_app
 
 from app import db, mail
-from .forms import LoginForm, RegistForm
+from .forms import LoginForm, RegistForm, ChangePasswordForm, ResetPasswordForm, ResetPasswordRequestForm
 from . import auth
 from ..models import User
 from flask_login import login_user, logout_user, current_user, login_required
@@ -86,3 +86,50 @@ def resend_confirmation():
                    token=token)
     flash('账户确认邮件已经重新发送')
     return redirect(url_for('main.index'))
+
+
+@auth.route('/reset_password', methods=['GET', 'POST'])
+def reset_password_request():
+    """密码忘记时，在登录页重置密码"""
+    form = ResetPasswordRequestForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if not user:
+            flash('未找到该用户')
+        token = user.generate_reset_token()
+        if not mail.send_mail(user.email, '重置密码', 'auth/mail/reset_password', user=user, token=token):
+            flash('邮件发送失败，请联系管理员')
+        else:
+            flash('密码重置链接已发往您的邮箱')
+        return redirect(url_for('auth.reset_password_request'))
+    return render_template('auth/reset_password.html', form=form)
+
+
+@auth.route('/reset_password/<token>', methods=['GET', 'POST'])
+@login_required
+def reset_password(token):
+    """邮箱内点击重置密码链接，跳转到此处"""
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        if not current_user.reset_password(token,form.new_password.data):
+            flash('链接可能已经失效，请重新发送邮件')
+            return redirect(url_for('auth.reset_password_request'))
+        flash('密码修改成功，请登录')
+        logout_user()
+        return redirect(url_for('auth.login'))
+    return render_template('auth/reset_password.html',form=form)
+
+
+@auth.route('/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    """登录后修改自己账户密码"""
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        if current_user.change_password(form.old_password.data, form.new_password.data):
+            flash('您的密码已成功修改，请登录')
+            logout_user()
+            return redirect(url_for('auth.login'))
+        flash('忘记现有密码？请重新输入')
+        return redirect(url_for('auth.change_password'))
+    return render_template('auth/change_password.html', form=form)

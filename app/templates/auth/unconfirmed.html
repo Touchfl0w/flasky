@@ -4,8 +4,8 @@
 <div class="page-header">
     <h1>账户未确认</h1>
 </div>
-<div class="pager">
-<p>请前往邮箱点击确认链接，重新发送确认邮件点击以下链接：</p>
-<a href={{ url_for('auth.resend_confirmation') }}>send</a>
+<div>
+<p>请前往邮箱点击确认链接，重新发送确认邮件点击以下链接：<a href={{ url_for('auth.resend_confirmation') }}>send</a></p>
+
 </div>
 {% endblock %}

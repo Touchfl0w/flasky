@@ -47,13 +47,44 @@ class User(UserMixin, db.Model):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
             data = s.loads(token)
-        except:
+        except Exception:
             return False
         else:
             if data['confirm'] != self.id:
                 return False
         self.confirmed = True
         db.session.add(self)
+        return True
+
+    def change_password(self, old_password, new_password):
+        if self.verify_password(old_password):
+            self.password = new_password
+            db.session.add(self)
+            db.session.commit()
+            return True
+        return False
+
+    def generate_reset_token(self, expiration=3600):
+        s = Serializer(current_app.config['SECRET_KEY'], expires_in=expiration)
+        token = s.dumps({'confirm': self.id})
+        return token
+
+    def _verify_reset_token(self, token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except Exception:
+            return False
+        if data['confirm'] != self.id:
+            return False
+        return True
+
+    def reset_password(self, token, new_password):
+        if not self._verify_reset_token(token):
+            return False
+        self.password = new_password
+        db.session.add(self)
+        db.session.commit()
         return True
 
     def __repr__(self):
