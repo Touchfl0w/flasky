@@ -1,8 +1,7 @@
-from flask import session, flash, redirect, url_for, render_template, current_app
-from .forms import NameForm
-from ..models import User
-from .. import db
-from ..mail import send_mail
+from flask import render_template
+from flask_login import login_required
+from app.decorators import permission_required, admin_required
+from ..models import Permission
 from datetime import datetime
 from . import main
 
@@ -12,7 +11,16 @@ def index():
     return render_template("index.html", current_time=datetime.utcnow())
 
 
-@main.route('/<name>')
-def hello_world(name):
-    session['name'] = name
-    return render_template("user.html", name=name)
+@main.route('/admin')
+@login_required
+@admin_required
+def for_admin():
+    return 'for admin'
+
+
+@main.route('/moderate')
+@login_required
+@permission_required(Permission.MODERATE_COMMENT)
+def for_moderate():
+    return 'for moderate'
+
