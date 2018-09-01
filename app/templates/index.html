@@ -2,16 +2,14 @@
 {% import "bootstrap/wtf.html" as wtf %}
 {% block page_content %}
     <div class="page-header">
-        <h2>hello {% if name %}{{ name|capitalize }}{% else %}stranger{% endif %}</h2>
-        {% if known %}
-        <p>欢迎再次回来！</p>
-        {% else %}
-        <p>欢迎首次光临！</p>
-        {% endif %}
+            {% if not current_user.is_authenticated %}
+                <h2>请先登录！</h2>
+            {% else %}
+                <h2>{{ current_user.username }}</h2>
+            {% endif %}
     </div>
     <div class="panel-body">
         <p>北京时间 : {{ moment(current_time).format('LLLL') }}</p>
         <p>已存在 :{{ moment(current_time).fromNow(refresh=True) }}</p>
     </div>
-    {{ wtf.quick_form(form) }}
 {% endblock %}
