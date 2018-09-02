@@ -18,10 +18,11 @@ class RegistForm(FlaskForm):
     password2 = PasswordField('确认密码', validators=[DataRequired()])
     submit = SubmitField('注册')
 
-    def validate_email(self,field):
+    def validate_email(self, field):
         if User.query.filter_by(email=field.data).first():
             raise ValidationError('邮件已注册.')
-    def validate_username(self,field):
+
+    def validate_username(self, field):
         if User.query.filter_by(username=field.data).first():
             raise ValidationError('用户名已注册.')
 
