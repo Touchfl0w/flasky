@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 {% block page_content %}
 <div class="page-header">
+    <img class="img-rounded profile-thumbnail" src="{{ user.generate_avatar_url(size=256) }}">
+    <div class="profile-header">
     <h1>{{ user.username }}</h1>
     {% if user.name and user.location %}
     <p>
@@ -37,5 +39,6 @@
         编辑[ADMIN]
     </a>
     {% endif %}
+    </div>
 </div>
 {% endblock %}

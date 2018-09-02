@@ -48,7 +48,7 @@ def edit_profile_admin(id):
     user = User.query.filter_by(id=id).first()
     form = EditProfileAdminForm(user)
     if form.validate_on_submit():
-        user.email = form.email.data
+        user.change_email(form.email.data)
         user.username = form.username.data
         user.confirmed = form.confirmed.data
         user.role = Role.query.get(form.role.data)
