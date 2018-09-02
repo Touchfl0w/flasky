@@ -1,6 +1,7 @@
 import os
 
-from flask import current_app
+from datetime import datetime
+from flask import current_app, request
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from . import db
@@ -74,8 +75,14 @@ class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(64), unique=True, index=True)
+    avatar_hash = db.Column(db.String(32))
     username = db.Column(db.String(64), unique=True, index=True)
     password_hash = db.Column(db.String(128))
+    name = db.Column(db.String(64))
+    location = db.Column(db.String(64))
+    about_me = db.Column(db.Text())
+    member_since = db.Column(db.DateTime(), default=datetime.utcnow)
+    last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     confirmed = db.Column(db.Boolean, default=False)
 
@@ -87,11 +94,48 @@ class User(UserMixin, db.Model):
             if self.role is None:
                 self.role = Role.query.filter_by(default=True).first()
 
+    def ping(self):
+        self.last_seen = datetime.utcnow()
+        db.session.add(self)
+        db.session.commit()
+
     def can(self,perm):
         return self.role.permissions & perm == perm
 
     def is_administrator(self):
         return self.can(Permission.ADMIN)
+
+    @staticmethod
+    def generate_avatar_hash(email):
+        import hashlib
+        return hashlib.md5(email.encode('utf-8')).hexdigest()
+
+    # @property
+    # def email(self):
+    #     return self.__email
+    #
+    # @email.setter
+    # def email(self,email):
+    #     if self.__email != email:
+    #         self.__email = email
+    #         self.avatar_hash = User.generate_avatar_hash(email)
+
+    def change_email(self, new_email):
+        if self.email != new_email:
+            self.email = new_email
+            self.avatar_hash = User.generate_avatar_hash(new_email)
+            db.session.add(self)
+            return True
+
+    def generate_avatar_url(self, size=100, default='identicon', rating='g'):
+        if request.is_secure:
+            url = 'https://secure.gravatar.com/avatar'
+        else:
+            url = 'http://secure.gravatar.com/avatar'
+        hash = self.avatar_hash or User.generate_avatar_hash(self.email)
+        return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
+            url=url, hash=hash, size=size, default=default, rating=rating)
+
 
     @property
     def password(self):
@@ -110,7 +154,7 @@ class User(UserMixin, db.Model):
         return token
 
     def verify_token(self, token):
-        #这应该是个反序列化器，不用设过期时间，没有盐
+        # 这应该是个反序列化器，不用设过期时间，没有盐
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
             data = s.loads(token)
