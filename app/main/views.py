@@ -3,15 +3,23 @@ from flask_login import login_required, current_user
 
 from app import db
 from app.decorators import permission_required, admin_required
-from .forms import EditProfileForm, EditProfileAdminForm
-from ..models import Permission, User, Role
+from .forms import EditProfileForm, EditProfileAdminForm, PostForm
+from ..models import Permission, User, Role, Post
 from datetime import datetime
 from . import main
 
 
 @main.route('/', methods=['get', 'post'])
 def index():
-    return render_template("index.html", current_time=datetime.utcnow())
+    form = PostForm()
+    if form.validate_on_submit():
+        post = Post(body=form.body.data, author = current_user._get_current_object())
+        db.session.add(post)
+        db.session.commit()
+        return redirect(url_for('main.index'))
+    # 倒序排列
+    posts = Post.query.order_by(Post.timestamp.desc()).all()
+    return render_template("index.html", form=form, posts=posts)
 
 
 @main.route('/user/<username>')
@@ -19,7 +27,8 @@ def index():
 def user(username):
     """用户资料页"""
     user = User.query.filter_by(username=username).first_or_404()
-    return render_template('user.html', user=user)
+    posts = user.posts.order_by(Post.timestamp.desc()).all()
+    return render_template('user.html', user=user, posts=posts)
 
 
 @main.route('/edit_profile', methods=['GET', "POST"])
