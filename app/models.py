@@ -210,6 +210,7 @@ class AnonymousUser(AnonymousUserMixin):
     def is_administrator(self):
         return False
 
+
 class Post(db.Model):
     __tablename__ = 'posts'
     id = db.Column(db.Integer, primary_key=True)
