@@ -191,6 +191,7 @@ class User(UserMixin, db.Model):
             return False
         return True
 
+
     def reset_password(self, token, new_password):
         if not self._verify_reset_token(token):
             return False

@@ -7,7 +7,7 @@ from . import auth
 from ..models import User
 from flask_login import login_user, logout_user, current_user, login_required
 from flask import session
-
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
@@ -109,12 +109,15 @@ def reset_password_request():
 
 
 @auth.route('/reset_password/<token>', methods=['GET', 'POST'])
-@login_required
 def reset_password(token):
     """邮箱内点击重置密码链接，跳转到此处"""
     form = ResetPasswordForm()
     if form.validate_on_submit():
-        if not current_user.reset_password(token,form.new_password.data):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        data = s.loads(token)
+        user_id = data['confirm']
+        user = User.query.filter_by(id = user_id).first()
+        if not user.reset_password(token,form.new_password.data):
             flash('链接可能已经失效，请重新发送邮件')
             return redirect(url_for('auth.reset_password_request'))
         flash('密码修改成功，请登录')
