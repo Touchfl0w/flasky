@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
+{% import "_macros.html" as macros %}
 {% block page_content %}
     <div class="page-header">
             {% if not current_user.is_authenticated %}
@@ -8,8 +9,11 @@
                 <h2>{{ current_user.username }}</h2>
             {% endif %}
     </div>
-    <div class="panel-body">
-        <p>北京时间 : {{ moment(current_time).format('LLLL') }}</p>
-        <p>已存在 :{{ moment(current_time).fromNow(refresh=True) }}</p>
+    {% if current_user.can(Permission.WRITE) %}
+    {{ wtf.quick_form(form) }}
+    {% endif %}
+    {% include '_posts.html' %}
+    <div class="pagination">
+    {{ macros.pagination_widget(pagination, 'main.index') }}
     </div>
 {% endblock %}

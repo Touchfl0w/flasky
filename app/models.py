@@ -85,6 +85,8 @@ class User(UserMixin, db.Model):
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     confirmed = db.Column(db.Boolean, default=False)
+    posts = db.relationship('Post', backref='author', lazy='dynamic')
+
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -135,7 +137,6 @@ class User(UserMixin, db.Model):
         hash = self.avatar_hash or User.generate_avatar_hash(self.email)
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
             url=url, hash=hash, size=size, default=default, rating=rating)
-
 
     @property
     def password(self):
@@ -190,6 +191,7 @@ class User(UserMixin, db.Model):
             return False
         return True
 
+
     def reset_password(self, token, new_password):
         if not self._verify_reset_token(token):
             return False
@@ -209,6 +211,15 @@ class AnonymousUser(AnonymousUserMixin):
     def is_administrator(self):
         return False
 
+
+class Post(db.Model):
+    __tablename__ = 'posts'
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+login_manager.anonymous_user = AnonymousUser
 
 # load_user函数为flask_login必须
 @login_manager.user_loader

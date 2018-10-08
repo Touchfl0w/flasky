@@ -47,3 +47,7 @@ class EditProfileAdminForm(FlaskForm):
             raise ValidationError('该用户名已注册')
 
 
+class PostForm(FlaskForm):
+    body = TextAreaField('写下你的想法吧', validators=[DataRequired()])
+    submit = SubmitField('提交')
+
