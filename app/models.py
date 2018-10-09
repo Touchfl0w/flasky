@@ -1,7 +1,10 @@
 import os
 
 from datetime import datetime
+
+import bleach
 from flask import current_app, request
+from markdown import markdown
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from . import db
@@ -218,6 +221,18 @@ class Post(db.Model):
     body = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    body_html = db.Column(db.Text)
+
+    @staticmethod
+    #事件监听函数的具体实现
+    def on_change_body(target, value, oldvalue, initiator):
+        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code','em', 'i', 'li',
+                        'ol', 'pre', 'strong', 'ul','h1', 'h2', 'h3', 'p']
+        target.body_html = bleach.linkify(bleach.clean(markdown(value, output_format='html'),
+                                                       tags=allowed_tags, strip=True))
+
+#注册监听Post.body，一旦有ｓｅｔ事件发生，同时更新Post.body_html
+db.event.listen(Post.body, 'set', Post.on_change_body)
 
 login_manager.anonymous_user = AnonymousUser
 

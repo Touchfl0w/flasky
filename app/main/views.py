@@ -13,8 +13,9 @@ from . import main
 def index():
     form = PostForm()
     if form.validate_on_submit():
-        post = Post(body=form.body.data, author = current_user._get_current_object())
+        post = Post(body=form.body.data, author=current_user._get_current_object())
         db.session.add(post)
+        print('yes')
         db.session.commit()
         return redirect(url_for('main.index'))
     # 倒序排列
