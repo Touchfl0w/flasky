@@ -15,7 +15,6 @@ def index():
     if form.validate_on_submit():
         post = Post(body=form.body.data, author=current_user._get_current_object())
         db.session.add(post)
-        print('yes')
         db.session.commit()
         return redirect(url_for('main.index'))
     # 倒序排列
@@ -83,6 +82,12 @@ def edit_profile_admin(id):
     form.location.data = user.location
     form.about_me.data = user.about_me
     return render_template('edit_profile.html', form=form)
+
+
+@main.route('/post/<id>', methods=['GET'])
+def post(id):
+    post = Post.query.filter_by(id=id).first()
+    return render_template('post.html', posts=[post])
 
 
 @main.route('/admin')

@@ -222,14 +222,37 @@ class Post(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     body_html = db.Column(db.Text)
+    digest = db.Column(db.Text)
 
     @staticmethod
     #事件监听函数的具体实现
     def on_change_body(target, value, oldvalue, initiator):
         allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code','em', 'i', 'li',
-                        'ol', 'pre', 'strong', 'ul','h1', 'h2', 'h3', 'p']
-        target.body_html = bleach.linkify(bleach.clean(markdown(value, output_format='html'),
-                                                       tags=allowed_tags, strip=True))
+                        'ol', 'pre', 'strong', 'ul','h1', 'h2', 'h3', 'p', 'img']
+        #对于带样式/属性的tag,必须添加该字典
+        allowed_attrs = {'*': ['class'],
+                         'a': ['href', 'rel'],
+                         'img': ['src', 'alt']}
+        # k = markdown(value, output_format='html')
+        #该markdown转换器更简单些,乱码少一些
+        import markdown_code_blocks
+        k = markdown_code_blocks.highlight(value)
+        import re
+        digest_list = [i for i in re.findall(r'>(.*?)<', k[:100]) if i]
+        target.digest = ''.join(digest_list[:30])
+        target.body_html = bleach.clean(k, tags=allowed_tags, attributes=allowed_attrs, strip=True)
+
+    @staticmethod
+    def update():
+        """更新数据库中ｐｏｓｔｓ表数据，添加ｄｉｇｅｓｔ字段"""
+        for post in Post.query.all():
+            #第一次增加body_html;有了body_html才能正则出digest
+            post.body = post.body
+            post.body = post.body
+            db.session.add(post)
+            db.session.commit()
+
+
 
 #注册监听Post.body，一旦有ｓｅｔ事件发生，同时更新Post.body_html
 db.event.listen(Post.body, 'set', Post.on_change_body)
