@@ -5,7 +5,6 @@ from app import db
 from app.decorators import permission_required, admin_required
 from .forms import EditProfileForm, EditProfileAdminForm, PostForm
 from ..models import Permission, User, Role, Post
-from datetime import datetime
 from . import main
 
 
@@ -86,6 +85,28 @@ def edit_profile_admin(id):
 
 @main.route('/post/<id>', methods=['GET'])
 def post(id):
+    """文章永久链接"""
+    post = Post.query.get_or_404(id)
+    return render_template('post.html', posts=[post])
+
+@main.route('/edit_post/<id>', methods=['GET', 'POST'])
+def edit_post(id):
+    """编辑博客文章"""
+    form = PostForm()
+    post = Post.query.get_or_404(id)
+    if form.validate_on_submit():
+        post.body = form.body.data
+        db.session.add(post)
+        db.session.commit()
+        return redirect(url_for('main.post', id=id))
+    form.body.data = post.body
+    return render_template('edit_post.html', form=form)
+
+
+
+
+def post(id):
+    """文章永久链接"""
     post = Post.query.filter_by(id=id).first()
     return render_template('post.html', posts=[post])
 

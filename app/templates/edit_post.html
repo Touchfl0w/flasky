@@ -1,0 +1,13 @@
+
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% block page_content %}
+{% if current_user.can(Permission.WRITE) %}
+    {{ wtf.quick_form(form) }}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{{ pagedown.include_pagedown() }}
+{% endblock %}
