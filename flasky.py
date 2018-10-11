@@ -1,5 +1,5 @@
 from app import create_app, db
-from app.models import User, Role
+from app.models import User, Role, Post
 from flask_migrate import Migrate
 
 app = create_app('development')
@@ -8,7 +8,7 @@ migrate = Migrate(app, db, render_as_batch=True)
 
 @app.shell_context_processor
 def make_shell_context():
-    return dict(db=db, User=User, Role=Role)
+    return dict(db=db, User=User, Role=Role,Post=Post)
 
 
 @app.cli.command()

@@ -6,6 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
 from config import config
 from flask_login import LoginManager
+from flask_pagedown import PageDown
 
 naming_convention = {
     "ix": 'ix_%(column_0_label)s',
@@ -15,6 +16,7 @@ naming_convention = {
     "pk": "pk_%(table_name)s"
 }
 
+pagedown = PageDown()
 email = Mail()
 bootstrap = Bootstrap()
 moment = Moment()
@@ -36,6 +38,7 @@ def create_app(config_name):
     moment.init_app(app)
     db.init_app(app)
     login_manager.init_app(app)
+    pagedown.init_app(app)
     #初始化蓝本
     from .main import main as main_blueprint
     app.register_blueprint(main_blueprint)

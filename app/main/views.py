@@ -1,17 +1,27 @@
-from flask import render_template, redirect, flash, url_for
+from flask import render_template, redirect, flash, url_for, request, current_app
 from flask_login import login_required, current_user
 
 from app import db
 from app.decorators import permission_required, admin_required
-from .forms import EditProfileForm, EditProfileAdminForm
-from ..models import Permission, User, Role
-from datetime import datetime
+from .forms import EditProfileForm, EditProfileAdminForm, PostForm
+from ..models import Permission, User, Role, Post
 from . import main
 
 
 @main.route('/', methods=['get', 'post'])
 def index():
-    return render_template("index.html", current_time=datetime.utcnow())
+    form = PostForm()
+    if form.validate_on_submit():
+        post = Post(body=form.body.data, author=current_user._get_current_object())
+        db.session.add(post)
+        db.session.commit()
+        return redirect(url_for('main.index'))
+    # 倒序排列
+    page = request.args.get('page', 1, type=int)
+    pagination = Post.query.order_by(Post.timestamp.desc()).\
+        paginate(page, per_page=current_app.config['PER_PAGE_COUNT'], error_out=False)
+    posts = pagination.items
+    return render_template("index.html", form=form, posts=posts, pagination=pagination)
 
 
 @main.route('/user/<username>')
@@ -19,7 +29,11 @@ def index():
 def user(username):
     """用户资料页"""
     user = User.query.filter_by(username=username).first_or_404()
-    return render_template('user.html', user=user)
+    page = request.args.get('page', 1, type=int)
+    pagination = Post.query.order_by(Post.timestamp.desc()). \
+        paginate(page, per_page=current_app.config['PER_PAGE_COUNT'], error_out=False)
+    posts = pagination.items
+    return render_template('user.html', user=user, posts=posts, pagination=pagination)
 
 
 @main.route('/edit_profile', methods=['GET', "POST"])
@@ -67,6 +81,34 @@ def edit_profile_admin(id):
     form.location.data = user.location
     form.about_me.data = user.about_me
     return render_template('edit_profile.html', form=form)
+
+
+@main.route('/post/<id>', methods=['GET'])
+def post(id):
+    """文章永久链接"""
+    post = Post.query.get_or_404(id)
+    return render_template('post.html', posts=[post])
+
+@main.route('/edit_post/<id>', methods=['GET', 'POST'])
+def edit_post(id):
+    """编辑博客文章"""
+    form = PostForm()
+    post = Post.query.get_or_404(id)
+    if form.validate_on_submit():
+        post.body = form.body.data
+        db.session.add(post)
+        db.session.commit()
+        return redirect(url_for('main.post', id=id))
+    form.body.data = post.body
+    return render_template('edit_post.html', form=form)
+
+
+
+
+def post(id):
+    """文章永久链接"""
+    post = Post.query.filter_by(id=id).first()
+    return render_template('post.html', posts=[post])
 
 
 @main.route('/admin')

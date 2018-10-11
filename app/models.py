@@ -1,6 +1,6 @@
-import os
-
 from datetime import datetime
+
+import bleach
 from flask import current_app, request
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
@@ -85,6 +85,8 @@ class User(UserMixin, db.Model):
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     confirmed = db.Column(db.Boolean, default=False)
+    posts = db.relationship('Post', backref='author', lazy='dynamic')
+
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -135,7 +137,6 @@ class User(UserMixin, db.Model):
         hash = self.avatar_hash or User.generate_avatar_hash(self.email)
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
             url=url, hash=hash, size=size, default=default, rating=rating)
-
 
     @property
     def password(self):
@@ -190,6 +191,7 @@ class User(UserMixin, db.Model):
             return False
         return True
 
+
     def reset_password(self, token, new_password):
         if not self._verify_reset_token(token):
             return False
@@ -209,6 +211,50 @@ class AnonymousUser(AnonymousUserMixin):
     def is_administrator(self):
         return False
 
+
+class Post(db.Model):
+    __tablename__ = 'posts'
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    body_html = db.Column(db.Text)
+    digest = db.Column(db.Text)
+
+    @staticmethod
+    #事件监听函数的具体实现
+    def on_change_body(target, value, oldvalue, initiator):
+        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code','em', 'i', 'li',
+                        'ol', 'pre', 'strong', 'ul','h1', 'h2', 'h3', 'p', 'img']
+        #对于带样式/属性的tag,必须添加该字典
+        allowed_attrs = {'*': ['class'],
+                         'a': ['href', 'rel'],
+                         'img': ['src', 'alt']}
+        # k = markdown(value, output_format='html')
+        #该markdown转换器更简单些,乱码少一些
+        import markdown_code_blocks
+        k = markdown_code_blocks.highlight(value)
+        import re
+        digest_list = [i for i in re.findall(r'>(.*?)<', k[:100]) if i]
+        target.digest = ''.join(digest_list[:30])
+        target.body_html = bleach.clean(k, tags=allowed_tags, attributes=allowed_attrs, strip=True)
+
+    @staticmethod
+    def update():
+        """更新数据库中ｐｏｓｔｓ表数据，添加ｄｉｇｅｓｔ字段"""
+        for post in Post.query.all():
+            #第一次增加body_html;有了body_html才能正则出digest
+            post.body = post.body
+            post.body = post.body
+            db.session.add(post)
+            db.session.commit()
+
+
+
+#注册监听Post.body，一旦有ｓｅｔ事件发生，同时更新Post.body_html
+db.event.listen(Post.body, 'set', Post.on_change_body)
+
+login_manager.anonymous_user = AnonymousUser
 
 # load_user函数为flask_login必须
 @login_manager.user_loader

@@ -14,6 +14,7 @@ class Config():
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     MAIL_SUBJECT_PREFIX = 'FLASKY'
     MAIL_SENDER = '就爱深蓝色 <1754643407@qq.com>'
+    PER_PAGE_COUNT = 10
 
     @staticmethod
     def init_app(app):

@@ -1,3 +1,4 @@
+from flask_pagedown.fields import PageDownField
 from flask_wtf import FlaskForm
 from wtforms import SubmitField, StringField, TextAreaField, BooleanField, SelectField
 from wtforms.validators import DataRequired, Length, ValidationError, Email, Regexp
@@ -45,5 +46,10 @@ class EditProfileAdminForm(FlaskForm):
     def validate_username(self, field):
         if field.data != self.user.username and User.query.filter_by(username=field.data).first():
             raise ValidationError('该用户名已注册')
+
+
+class PostForm(FlaskForm):
+    submit = SubmitField('提交')
+    body = PageDownField('写下你的想法吧', validators=[DataRequired()])
 
 
